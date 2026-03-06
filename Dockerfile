@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY index.html .
 
-EXPOSE 8000
+EXPOSE 80
 
-CMD ["python", "-m", "http.server", "8000"]
+CMD ["python", "-m", "http.server", "80"]
