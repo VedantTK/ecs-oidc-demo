@@ -56,3 +56,19 @@ jobs:
             --cluster $ECS_CLUSTER \
             --service $ECS_SERVICE \
             --force-new-deployment
+
+      - name: Get ECS Task Public IP
+        id: task_ip
+        run: |
+          TASK_ARN=$(aws ecs list-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --query 'taskArns[0]' --output text)
+          PUBLIC_IP=$(aws ecs describe-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --tasks $TASK_ARN \
+            --query 'tasks[0].attachments[0].details[?name==`publicIPv4Address`].value' \
+            --output text)
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: Print access URL
+        run: echo "App URL: http://$PUBLIC_IP:8000"
