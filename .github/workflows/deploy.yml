@@ -1,44 +1,44 @@
-name: Deploy to ECS Fargate
+name: Build & Deploy to AWS ECS
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
 
-    env:
-      AWS_REGION: ap-south-1
-      ECR_REPO: 293088445135.dkr.ecr.ap-south-1.amazonaws.com/ecs-oidc-demo
-      ECS_CLUSTER: ecs-oidc-cluster
-      ECS_SERVICE: ecs-oidc-service
+    permissions:
+      id-token: write      # required to get OIDC token
+      contents: read       # needed to checkout code
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+    - name: Configure AWS Credentials via OIDC
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::293088445135:role/github-ecs-deploy-role
+        aws-region: ap-south-1
 
-      - name: Login to Amazon ECR
-        run: |
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+    - name: Login to ECR
+      run: |
+        aws ecr get-login-password \
+            --region ap-south-1 | docker login \
+            --username AWS \
+            --password-stdin 293088445135.dkr.ecr.ap-south-1.amazonaws.com
 
-      - name: Build & Push Docker Image
-        run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker build -t $ECR_REPO:$IMAGE_TAG .
-          docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
-          docker push $ECR_REPO:$IMAGE_TAG
-          docker push $ECR_REPO:latest
+    - name: Build Docker Image
+      run: docker build -t 293088445135.dkr.ecr.ap-south-1.amazonaws.com/ecs-app-repo:latest .
 
-      - name: Deploy to ECS
-        run: aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+    - name: Push to ECR
+      run: docker push 293088445135.dkr.ecr.ap-south-1.amazonaws.com/ecs-app-repo:latest
+
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service \
+          --cluster ecs-cluster-mumbai \
+          --service app-service \
+          --force-new-deployment
