@@ -70,5 +70,10 @@ jobs:
             --output text)
           echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
-      - name: Print access URL
-        run: echo "App URL: http://$PUBLIC_IP:8000"
+      - name: Set app URL as output
+        id: set_app_url
+        run: echo "app_url=http://$PUBLIC_IP:8000" >> $GITHUB_OUTPUT
+
+      - name: Print app URL
+        run: |
+          echo "App URL: ${{ steps.set_app_url.outputs.app_url }}"
