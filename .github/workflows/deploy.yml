@@ -42,18 +42,3 @@ jobs:
 
       - name: Deploy to ECS
         run: aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
-
-      - name: Wait for Task & Print Public URL
-        run: |
-          echo "Waiting for task to start..."
-          aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE
-          
-          TASK_ARN=$(aws ecs list-tasks --cluster $ECS_CLUSTER --desired-status RUNNING --query 'taskArns[0]' --output text)
-          PUBLIC_IP=$(aws ecs describe-tasks \
-            --cluster $ECS_CLUSTER \
-            --tasks $TASK_ARN \
-            --query 'tasks[0].attachments[0].details[?name==`publicIPv4Address`].value' \
-            --output text)
-          
-          echo "✅ APP IS LIVE!"
-          echo "🌍 http://$PUBLIC_IP:8000"
